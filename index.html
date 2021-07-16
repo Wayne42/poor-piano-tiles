@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poor Man's Piano Tiles</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        #Status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.1);
+        }
+        #MissClickCounterDisplay {
+            background: rgba(255,0,0,0.1);
+            color: black;
+            text-shadow: 1px 1px 0 white;
+        }
+        #GameContainer{
+            position: relative;
+            z-index: 9;
+        }
+    </style>
+</head>
+<body>
+    <div id="GameContainer">
+        
+        <canvas id="MAINFRAME" width=400 height=800></canvas>
+        <div id="Status">
+            <div>
+                <span id="ClickCounterDisplay"></span>
+            </div>
+            <div>
+                <span id="MissClickCounterDisplay"></span>
+            </div>
+            
+        </div>
+        
+        <div id="status"></div>
+        
+    </div>
+    <script>
+        let MissClickCounterDisplay = document.getElementById("MissClickCounterDisplay");
+        function setMissClickCounterDisplay(int){
+            MissClickCounterDisplay.innerHTML = int;
+        }
+        let ClickCounterDisplay = document.getElementById("ClickCounterDisplay");
+        function setClickCounterDisplay(int){
+            ClickCounterDisplay.innerHTML = int;
+        }
+    </script>
+    <script>
+
+//random number between 1 and MAX (inclusive)
+function randomNumber(MAX) {
+	return Math.floor(Math.random() * MAX + 1);
+}
+
+var canvas = document.getElementById('MAINFRAME');
+var canvasContext = canvas.getContext('2d');
+
+class Piano {
+	constructor(PIANO) {
+		this.id = 0;
+
+        this.width = 400;
+        this.height = 800;
+
+        this.leftBounding = 0;
+        this.rightBounding = this.width;
+
+        this.upperBounding = 0;
+        this.lowerBounding = this.height;
+
+        this.generateNextRow = () => {
+            let newRow = new TileRow();
+            this.rows.push(newRow);
+        }
+
+        this.rows = [];
+
+        this.relevantRows = [];
+
+        this.currentRow = 0;
+
+        this.missClickCounter = 0;
+
+        this.clickRow = (slot) => {
+            if(this.rows[this.currentRow].tiles[slot].needsToBeClicked){
+                this.rows[this.currentRow].setSolved(true);
+                this.moveToNextRow();
+                this.currentRow++;
+            }
+            else{
+                this.missClickCounter++;
+            }
+            this.drawTiles();
+        }
+
+		this.drawTiles = () => {
+            canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+
+            for(let i = 0; i < this.rows.length; i++){
+                let row = this.rows[i].tiles;
+                console.log(row);
+                for(let j = 0; j < row.length; j++){
+                    let tile = row[j];
+                    console.log(tile);
+                    if(tile.needsToBeClicked){
+                        canvasContext.fillStyle = "black";
+                    }else{
+                        canvasContext.fillStyle = "#fafafa";
+                    }
+                    let tileHeight = this.height / 5;
+                    let tileWidth = this.width / 4;
+                    let xOffset = (j * tileWidth);
+                    let yOffset = this.lowerBounding - (i + 1) * tileHeight;
+			        canvasContext.fillRect(xOffset, yOffset, tileWidth, tileHeight);
+                }
+            }
+            if(this.missClickCounter){
+                setMissClickCounterDisplay(this.missClickCounter);
+            }
+            setClickCounterDisplay(this.currentRow);
+		};
+
+        this.moveToNextRow = () => {
+            this.lowerBounding += this.height / 5; 
+        }
+	}
+}
+
+class TileRow {
+    constructor() {
+		this.solved = false;
+        this.tiles = [];
+
+        if (this.tiles.length < 4) {
+            let activeTile = randomNumber(4);
+            this.tiles.push(new Tile());
+            this.tiles.push(new Tile());
+            this.tiles.push(new Tile());
+            this.tiles.push(new Tile());
+
+            this.tiles[activeTile - 1].needsToBeClicked = true;
+        }
+
+        this.setSolved = (isSolved) => {
+            this.solved = isSolved;
+        }
+	}
+}
+
+class Tile {
+    constructor() {
+		this.needsToBeClicked = false;
+	}
+}
+
+var Piano1 = new Piano();
+for(let i = 50; i > 0; i--){
+    Piano1.generateNextRow();
+}
+Piano1.drawTiles();
+var keyPressed = {};
+document.onkeydown = function(e) {
+    keyPressed[e.key + e.location] = true;
+    key = e.keyCode;
+    console.log(e);
+
+    if (keyPressed["q0"]) { 
+        Piano1.clickRow(0);
+    }
+    if (keyPressed["w0"]) { 
+        Piano1.clickRow(1);
+    }
+    if (keyPressed["e0"]) { 
+        Piano1.clickRow(2);
+    }
+    if (keyPressed["r0"]) { 
+        Piano1.clickRow(3);
+    }
+}
+
+document.addEventListener('keyup', function(e) {
+   keyPressed[e.key + e.location] = false;
+}, false);
+
+document.getElementById("MAINFRAME").addEventListener("click", function(e){
+    let xPos = e.x;
+    let areas = canvas.width / 4;
+    let hit = Math.floor(xPos / areas);
+    Piano1.clickRow(hit);
+});
+    </script>
+</body>
+</html>
